@@ -1,7 +1,7 @@
 // ─── Groq config (same as ai.js) ─────────────────────────────────────────────
-const GROQ_API_KEY = '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';
-const GROQ_URL     = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL   = 'llama-3.3-70b-versatile';
+const GROQ_API_KEY = 'YOUR_API_KEY';
+const GROQ_URL = 'URL';
+const GROQ_MODEL = 'LLM_MODEL_NAME';
 
 // ─── Fallback local question bank ─────────────────────────────────────────────
 const FALLBACK_QUESTIONS = [
