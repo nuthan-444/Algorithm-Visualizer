@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AlgoViz Ultimate – Algorithm Visualizer</title>
+  <meta name="description"
+    content="Interactive algorithm visualizer with sorting, searching, dynamic programming, graph algorithms, battle mode, quiz, and complexity charts.">
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header>
+    <div>
+      <div class="logo">Algo<span>Viz</span> <span class="pro-badge">ULTIMATE</span></div>
+      <span class="logo-sub">INTERACTIVE ALGORITHM VISUALIZER</span>
+    </div>
+    <div class="header-modes">
+      <button class="mode-btn mode-active" data-mode="visualize" id="mode-visualize">⚙ Visualize</button>
+      <button class="mode-btn" data-mode="battle" id="mode-battle">⚔ Battle</button>
+      <button class="mode-btn" data-mode="quiz" id="mode-quiz">🧩 Quiz</button>
+      <button class="mode-btn" data-mode="complexity" id="mode-complexity">📊 Complexity</button>
+      <button class="mode-btn" data-mode="art" id="mode-art">🎨 Art</button>
+    </div>
+    <div class="status-bar">
+      <div class="status-dot"></div>
+      <span>SYSTEM ONLINE</span>
+      <span id="ai-status" style="color:var(--accent4)">AI READY</span>
+    </div>
+  </header>
+
+  <div class="app">
+    <aside>
+      <div class="sidebar-title">Algorithms</div>
+      <!-- Sorting group -->
+      <div class="algo-group open" id="grp-sort">
+        <div class="algo-group-header" data-group="grp-sort">⬆ Sorting <span class="chevron">▶</span></div>
+        <div class="algo-items">
+          <button class="algo-btn" data-algo="bubble" id="btn-bubble">Bubble Sort</button>
+          <button class="algo-btn" data-algo="selection" id="btn-selection">Selection Sort</button>
+          <button class="algo-btn" data-algo="insertion" id="btn-insertion">Insertion Sort</button>
+          <button class="algo-btn" data-algo="merge" id="btn-merge">Merge Sort</button>
+          <button class="algo-btn" data-algo="quick" id="btn-quick">Quick Sort</button>
+          <button class="algo-btn" data-algo="heap" id="btn-heap">Heap Sort</button>
+          <button class="algo-btn" data-algo="shell" id="btn-shell">Shell Sort</button>
+        </div>
+      </div>
+      <!-- Searching group -->
+      <div class="algo-group" id="grp-search">
+        <div class="algo-group-header" data-group="grp-search">🔍 Searching <span class="chevron">▶</span></div>
+        <div class="algo-items">
+          <button class="algo-btn" data-algo="linear" id="btn-linear">Linear Search</button>
+          <button class="algo-btn" data-algo="binary" id="btn-binary">Binary Search</button>
+          <button class="algo-btn" data-algo="jump" id="btn-jump">Jump Search</button>
+          <button class="algo-btn" data-algo="interpolation" id="btn-interpolation">Interpolation Search</button>
+          <button class="algo-btn" data-algo="exponential" id="btn-exponential">Exponential Search</button>
+        </div>
+      </div>
+      <!-- DP group -->
+      <div class="algo-group" id="grp-dp">
+        <div class="algo-group-header" data-group="grp-dp">◈ Dynamic Programming <span class="chevron">▶</span></div>
+        <div class="algo-items">
+          <button class="algo-btn" data-dp-tab="dp-concepts" id="btn-dp-concepts">Concepts &amp; Comparison</button>
+          <button class="algo-btn" data-dp-tab="dp-fib" id="btn-dp-fib">Fibonacci (DP)</button>
+          <button class="algo-btn" data-dp-tab="dp-lcs" id="btn-dp-lcs">Longest Common Subseq.</button>
+          <button class="algo-btn" data-dp-tab="dp-mcm" id="btn-dp-mcm">Matrix Chain Mult.</button>
+          <button class="algo-btn" data-dp-tab="dp-knapsack" id="btn-dp-knapsack">0/1 Knapsack</button>
+          <button class="algo-btn" data-dp-tab="dp-nqueens" id="btn-dp-nqueens">N-Queens (Backtrack)</button>
+          <button class="algo-btn" data-dp-tab="dp-coloring" id="btn-dp-coloring">Graph Coloring (BT)</button>
+        </div>
+      </div>
+      <!-- Graph group -->
+      <div class="algo-group" id="grp-graph">
+        <div class="algo-group-header" data-group="grp-graph">⬡ Graph Algorithms <span class="chevron">▶</span></div>
+        <div class="algo-items">
+          <button class="algo-btn" data-graph-tab="g-bfs" id="btn-g-bfs">BFS</button>
+          <button class="algo-btn" data-graph-tab="g-dfs" id="btn-g-dfs">DFS</button>
+          <button class="algo-btn" data-graph-tab="g-topo" id="btn-g-topo">Topological Sort</button>
+          <button class="algo-btn" data-graph-tab="g-scc" id="btn-g-scc">Strongly Connected Comp.</button>
+          <button class="algo-btn" data-graph-tab="g-floyd" id="btn-g-floyd">Floyd-Warshall</button>
+          <button class="algo-btn" data-graph-tab="g-flow" id="btn-g-flow">Ford-Fulkerson (Max-Flow)</button>
+        </div>
+      </div>
+      <div class="complexity">
+        <h4>Complexity</h4>
+        <div class="comp-row"><span class="comp-label">Best</span><span class="comp-val" id="c-best">—</span></div>
+        <div class="comp-row"><span class="comp-label">Average</span><span class="comp-val ok" id="c-avg">—</span></div>
+        <div class="comp-row"><span class="comp-label">Worst</span><span class="comp-val bad" id="c-worst">—</span>
+        </div>
+        <div class="comp-row"><span class="comp-label">Space</span><span class="comp-val" id="c-space">—</span></div>
+        <div class="comp-row"><span class="comp-label">Stable</span><span class="comp-val" id="c-stable">—</span></div>
+      </div>
+    </aside>
+
+    <main>
+      <!-- VISUALIZE MODE SECTION -->
+      <div id="visualize-section">
+        <div class="controls-panel">
+          <div class="ctrl-group">
+            <div class="ctrl-label">Array Input</div><input type="text" id="array-input"
+              value="38,27,43,3,9,82,10,55,17">
+          </div>
+          <div class="ctrl-group" id="target-group" style="display:none">
+            <div class="ctrl-label">Search Target</div><input type="text" id="target-input" placeholder="e.g. 27">
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-label">Speed</div>
+            <div class="speed-wrap"><input type="range" id="speed-slider" min="1" max="10" value="5"><span
+                class="speed-val" id="speed-label">5x</span></div>
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-label">Size</div><select id="size-select">
+              <option value="10">10 items</option>
+              <option value="20" selected>20 items</option>
+              <option value="30">30 items</option>
+              <option value="50">50 items</option>
+            </select>
+          </div>
+          <button class="btn btn-secondary" id="random-btn">⟳ Random</button>
+          <button class="btn btn-primary" id="run-btn">▶ Visualize</button>
+          <button class="btn btn-danger" id="stop-btn">■ Stop</button>
+          <div class="running-badge" id="running-badge">RUNNING</div>
+        </div>
+        <div class="viz-panel">
+          <div class="viz-header">
+            <div class="viz-title" id="viz-title">SELECT AN ALGORITHM</div>
+            <div class="viz-stats">
+              <div class="stat-item"><span class="stat-label">Comparisons: </span><span class="stat-val"
+                  id="stat-cmp">0</span></div>
+              <div class="stat-item"><span class="stat-label">Swaps: </span><span class="stat-val"
+                  id="stat-swp">0</span></div>
+            </div>
+          </div>
+          <div id="welcome">
+            <div class="big-icon">⚙</div>
+            <h2>ALGORITHM VISUALIZER ULTIMATE</h2>
+            <p>Select an algorithm → enter array → click <strong>Visualize</strong>. Explore Battle, Quiz, Complexity,
+              Art modes and the AI Advisor.</p>
+          </div>
+          <div id="bar-container"></div>
+          <div id="search-container"></div>
+          <div id="step-info">Step <span id="step-num">0</span></div>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div class="bottom-grid">
+          <div class="log-panel">
+            <div class="log-title">Execution Log</div>
+            <div id="log-entries">
+              <div class="log-entry">// Waiting for input...</div>
+            </div>
+          </div>
+          <div class="pseudo-panel">
+            <div class="pseudo-title">Pseudo Code</div>
+            <pre id="pseudo-code">// Select an algorithm</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- BATTLE MODE SECTION -->
+      <div id="battle-section" style="display:none">
+        <div class="battle-header">
+          <h2 class="section-title-text">⚔ Algorithm Battle Arena</h2>
+          <p style="color:var(--text-dim);margin-bottom:1rem">Watch two algorithms race side-by-side on identical data
+          </p>
+          <div class="battle-controls">
+            <div class="ctrl-group">
+              <div class="ctrl-label">Algorithm 1</div>
+              <select id="battle-algo1">
+                <option value="bubble">Bubble Sort</option>
+                <option value="selection">Selection Sort</option>
+                <option value="insertion">Insertion Sort</option>
+                <option value="merge" selected>Merge Sort</option>
+                <option value="quick">Quick Sort</option>
+                <option value="heap">Heap Sort</option>
+                <option value="shell">Shell Sort</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;font-size:1.5rem;color:var(--accent2);font-weight:bold">VS</div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">Algorithm 2</div>
+              <select id="battle-algo2">
+                <option value="bubble" selected>Bubble Sort</option>
+                <option value="selection">Selection Sort</option>
+                <option value="insertion">Insertion Sort</option>
+                <option value="merge">Merge Sort</option>
+                <option value="quick">Quick Sort</option>
+                <option value="heap">Heap Sort</option>
+                <option value="shell">Shell Sort</option>
+              </select>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">Array Size</div>
+              <select id="battle-size">
+                <option value="20">20 items</option>
+                <option value="40" selected>40 items</option>
+                <option value="60">60 items</option>
+                <option value="80">80 items</option>
+              </select>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">Speed</div>
+              <select id="battle-speed">
+                <option value="3">Slow</option>
+                <option value="5" selected>Medium</option>
+                <option value="8">Fast</option>
+                <option value="10">Ultra</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="battle-start-btn">⚔ Start Battle</button>
+            <button class="btn btn-secondary" id="battle-reset-btn">⟳ Reset</button>
+          </div>
+        </div>
+        <div class="battle-arena">
+          <div class="battle-side">
+            <div class="battle-name" id="b1-name">MERGE SORT</div>
+            <div class="battle-stats-row">
+              <span class="battle-stat">Cmps: <b id="b1-cmp">0</b></span>
+              <span class="battle-stat">Swps: <b id="b1-swp">0</b></span>
+            </div>
+            <div class="battle-bars" id="b1-bars"></div>
+          </div>
+          <div class="battle-divider">VS</div>
+          <div class="battle-side">
+            <div class="battle-name" id="b2-name">BUBBLE SORT</div>
+            <div class="battle-stats-row">
+              <span class="battle-stat">Cmps: <b id="b2-cmp">0</b></span>
+              <span class="battle-stat">Swps: <b id="b2-swp">0</b></span>
+            </div>
+            <div class="battle-bars" id="b2-bars"></div>
+          </div>
+        </div>
+        <div class="battle-winner" id="battle-winner" style="display:none">
+          <div id="winner-title" class="winner-title">🏆 WINNER!</div>
+          <div id="winner-desc" class="winner-desc"></div>
+          <div class="winner-stats">
+            <div class="winner-stat-col">
+              <div class="winner-stat-label" id="b1-name-w">Algorithm 1</div>
+              <div>Comparisons: <b id="w-b1-cmp">0</b></div>
+              <div>Swaps: <b id="w-b1-swp">0</b></div>
+            </div>
+            <div class="winner-stat-col">
+              <div class="winner-stat-label" id="b2-name-w">Algorithm 2</div>
+              <div>Comparisons: <b id="w-b2-cmp">0</b></div>
+              <div>Swaps: <b id="w-b2-swp">0</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUIZ MODE SECTION -->
+      <div id="quiz-section" style="display:none">
+        <div class="quiz-container">
+          <h2 class="section-title-text">🧩 Algorithm Quiz</h2>
+          <p style="color:var(--text-dim);margin-bottom:1.5rem">Test your knowledge of algorithms and data structures
+          </p>
+          <div class="quiz-score-bar">
+            <span>Score: <b id="quiz-score">0</b></span>
+            <span>Question: <b id="quiz-q-num">1</b> / <b id="quiz-q-total">10</b></span>
+            <span>Streak: <b id="quiz-streak">0</b> 🔥</span>
+          </div>
+          <div class="quiz-card" id="quiz-card">
+            <div class="quiz-question" id="quiz-question">Click "Start Quiz" to begin!</div>
+            <div class="quiz-options" id="quiz-options"></div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+          </div>
+          <div class="quiz-controls">
+            <button class="btn btn-primary" id="quiz-start-btn">▶ Start Quiz</button>
+            <button class="btn btn-secondary" id="quiz-next-btn" style="display:none">Next ▶</button>
+          </div>
+          <div class="quiz-progress" id="quiz-progress"></div>
+        </div>
+      </div>
+
+      <!-- COMPLEXITY SECTION -->
+      <div id="complexity-section" style="display:none">
+        <div class="complexity-header">
+          <h2 class="section-title-text">📊 Complexity Analyzer</h2>
+          <p style="color:var(--text-dim);margin-bottom:1rem">Compare time complexities visually with real computation
+            counts</p>
+        </div>
+        <div class="chart-controls">
+          <div id="chart-checks" class="chart-checks">
+            <label><input type="checkbox" value="bubble" checked> <span style="color:#ff6b35">Bubble</span></label>
+            <label><input type="checkbox" value="selection" checked> <span
+                style="color:#bf5fff">Selection</span></label>
+            <label><input type="checkbox" value="insertion"> <span style="color:#ffd700">Insertion</span></label>
+            <label><input type="checkbox" value="merge" checked> <span style="color:#00d4ff">Merge</span></label>
+            <label><input type="checkbox" value="quick"> <span style="color:#39ff14">Quick</span></label>
+            <label><input type="checkbox" value="heap"> <span style="color:#ff69b4">Heap</span></label>
+          </div>
+          <div style="display:flex;gap:.7rem;flex-wrap:wrap">
+            <button class="btn btn-primary" id="complexity-run-btn">▶ Run Analysis</button>
+            <button class="btn btn-secondary" id="complexity-chart-btn">📈 Theoretical Curves</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="complexity-chart-canvas"></canvas>
+        </div>
+        <div class="chart-info" id="chart-info">Select algorithms and click Run Analysis to see real comparison counts
+          grow with array size.</div>
+      </div>
+
+      <!-- ART MODE SECTION -->
+      <div id="art-section" style="display:none">
+        <div class="art-header">
+          <h2 class="section-title-text">🎨 Algorithm Art Studio</h2>
+          <p style="color:var(--text-dim);margin-bottom:1rem">Watch sorting algorithms create stunning visual art</p>
+          <div class="art-controls">
+            <div class="ctrl-group">
+              <div class="ctrl-label">Algorithm</div>
+              <select id="art-algo">
+                <option value="bubble">Bubble Sort</option>
+                <option value="selection">Selection Sort</option>
+                <option value="insertion">Insertion Sort</option>
+                <option value="merge" selected>Merge Sort</option>
+                <option value="quick">Quick Sort</option>
+                <option value="shell">Shell Sort</option>
+              </select>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">Palette</div>
+              <select id="art-palette">
+                <option value="neon" selected>Neon</option>
+                <option value="fire">Fire</option>
+                <option value="ocean">Ocean</option>
+                <option value="aurora">Aurora</option>
+                <option value="candy">Candy</option>
+              </select>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">Elements</div>
+              <select id="art-size">
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+                <option value="200">200</option>
+                <option value="300">300</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="art-start-btn">🎨 Generate Art</button>
+            <button class="btn btn-danger" id="art-stop-btn">■ Stop</button>
+            <button class="btn btn-secondary" id="art-download-btn">⬇ Save</button>
+          </div>
+        </div>
+        <div class="art-canvas-wrap">
+          <canvas id="art-canvas" height="400"></canvas>
+        </div>
+        <div class="art-info" id="art-info">Choose an algorithm and palette, then click Generate Art!</div>
+      </div>
+
+      <!-- DP SECTION -->
+      <div class="section-divider" id="dp-section" style="display:none">
+        <div class="section-header">
+          <span class="section-badge badge-dp">◈ Dynamic Programming</span>
+          <span class="section-title-text" id="dp-section-title">DP Concepts &amp; Visualizations</span>
+        </div>
+        <div class="tab-bar" id="dp-tab-bar">
+          <button class="tab-btn tab-active" data-tab="dp-concepts">Concepts</button>
+          <button class="tab-btn" data-tab="dp-fib">Fibonacci</button>
+          <button class="tab-btn" data-tab="dp-lcs">LCS</button>
+          <button class="tab-btn" data-tab="dp-mcm">Matrix Chain</button>
+          <button class="tab-btn" data-tab="dp-knapsack">Knapsack</button>
+          <button class="tab-btn" data-tab="dp-nqueens">N-Queens</button>
+          <button class="tab-btn" data-tab="dp-coloring">Graph Coloring</button>
+        </div>
+
+        <!-- DP Concepts -->
+        <div class="tab-content active" id="dp-concepts">
+          <div class="dp-concepts-grid">
+            <div class="concept-card">
+              <h3>🔁 Recursion</h3>
+              <p>Solves the problem by dividing into subproblems repeatedly. May recompute the same subproblem multiple
+                times.</p>
+              <div class="concept-badge bad-badge">Exponential: O(2ⁿ)</div>
+            </div>
+            <div class="concept-card">
+              <h3>📝 Memoization (Top-Down)</h3>
+              <p>Recursion + cache. Store results of computed subproblems. Only computes each unique subproblem once.
+              </p>
+              <div class="concept-badge ok-badge">Polynomial: O(n)</div>
+            </div>
+            <div class="concept-card">
+              <h3>📊 Tabulation (Bottom-Up)</h3>
+              <p>Fill a DP table iteratively from base cases. No recursion stack overhead. Preferred in practice.</p>
+              <div class="concept-badge good-badge">Optimal: O(n) time &amp; O(n) space</div>
+            </div>
+          </div>
+          <div style="margin-top:1.5rem">
+            <div class="ctrl-label">Show recursion tree for fib(n): n = <input type="number" id="fib-tree-n" value="6"
+                min="2" max="10"
+                style="width:60px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px">
+            </div>
+            <button class="btn btn-secondary" id="fib-tree-btn" style="margin-top:.5rem">Draw Tree</button>
+            <div class="canvas-wrap" style="margin-top:.8rem">
+              <canvas id="fib-tree-canvas" height="340"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fibonacci DP -->
+        <div class="tab-content" id="dp-fib">
+          <div class="dp-controls">
+            <label class="ctrl-label">Compute fib(n): n = <input type="number" id="fib-n" value="10" min="2" max="30"
+                style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px"></label>
+            <button class="btn btn-primary" id="fib-run-btn">▶ Run</button>
+          </div>
+          <div class="dp-info" id="fib-info">Click Run to visualize Fibonacci DP table filling.</div>
+          <div class="table-wrap">
+            <table class="dp-table" id="fib-table"></table>
+          </div>
+        </div>
+
+        <!-- LCS -->
+        <div class="tab-content" id="dp-lcs">
+          <div class="dp-controls">
+            <label class="ctrl-label">String 1: <input type="text" id="lcs-s1" value="ABCBDAB" maxlength="12"
+                style="width:120px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;text-transform:uppercase"></label>
+            <label class="ctrl-label">String 2: <input type="text" id="lcs-s2" value="BDCAB" maxlength="12"
+                style="width:120px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px;text-transform:uppercase"></label>
+            <button class="btn btn-primary" id="lcs-run-btn">▶ Run LCS</button>
+          </div>
+          <div class="dp-info" id="lcs-info">Click Run to find the Longest Common Subsequence.</div>
+          <div class="table-wrap">
+            <table class="dp-table" id="lcs-table"></table>
+          </div>
+        </div>
+
+        <!-- Matrix Chain -->
+        <div class="tab-content" id="dp-mcm">
+          <div class="dp-controls">
+            <label class="ctrl-label">Dimensions (comma-separated): <input type="text" id="mcm-dims"
+                value="10,30,5,60,20"
+                style="width:200px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px"></label>
+            <button class="btn btn-primary" id="mcm-run-btn">▶ Run MCM</button>
+          </div>
+          <div class="dp-info" id="mcm-info">Click Run to find optimal parenthesization for matrix chain multiplication.
+          </div>
+          <div class="table-wrap">
+            <table class="dp-table" id="mcm-table"></table>
+          </div>
+        </div>
+
+        <!-- Knapsack -->
+        <div class="tab-content" id="dp-knapsack">
+          <div class="dp-controls">
+            <label class="ctrl-label">Capacity: <input type="number" id="ks-cap" value="10" min="5" max="20"
+                style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px"></label>
+            <button class="btn btn-primary" id="ks-run-btn">▶ Run Knapsack</button>
+          </div>
+          <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.5rem">Items: (w=2,v=6), (w=2,v=10),
+            (w=3,v=12), (w=5,v=13), (w=7,v=15)</p>
+          <div class="dp-info" id="ks-info">Click Run to fill the knapsack DP table.</div>
+          <div class="table-wrap">
+            <table class="dp-table" id="ks-table"></table>
+          </div>
+        </div>
+
+        <!-- N-Queens -->
+        <div class="tab-content" id="dp-nqueens">
+          <div class="dp-controls">
+            <label class="ctrl-label">Board size (N): <input type="number" id="nq-n" value="6" min="4" max="10"
+                style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px"></label>
+            <button class="btn btn-primary" id="nq-run-btn">▶ Solve N-Queens</button>
+            <button class="btn btn-danger" id="nq-stop-btn">■ Stop</button>
+          </div>
+          <div class="dp-info" id="nq-info">Click Solve to watch backtracking find a valid queen placement.</div>
+          <div id="nq-board" class="nq-board"></div>
+        </div>
+
+        <!-- Graph Coloring -->
+        <div class="tab-content" id="dp-coloring">
+          <div class="dp-controls">
+            <label class="ctrl-label">Number of colors: <input type="number" id="gc-colors" value="3" min="2" max="5"
+                style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px"></label>
+            <button class="btn btn-primary" id="gc-run-btn">▶ Color Graph</button>
+            <button class="btn btn-danger" id="gc-stop-btn">■ Stop</button>
+          </div>
+          <div class="dp-info" id="gc-info">Click Color Graph to watch backtracking assign colors.</div>
+          <div class="canvas-wrap"><canvas id="gc-canvas" height="300"></canvas></div>
+        </div>
+      </div>
+
+      <!-- GRAPH SECTION -->
+      <div class="section-divider" id="graph-section" style="display:none">
+        <div class="section-header">
+          <span class="section-badge badge-graph">⬡ Graph Algorithms</span>
+          <span class="section-title-text" id="graph-section-title">Graph Visualizations</span>
+        </div>
+        <div class="tab-bar" id="graph-tab-bar">
+          <button class="tab-btn tab-active" data-gtab="g-bfs">BFS</button>
+          <button class="tab-btn" data-gtab="g-dfs">DFS</button>
+          <button class="tab-btn" data-gtab="g-topo">Topo Sort</button>
+          <button class="tab-btn" data-gtab="g-scc">SCC</button>
+          <button class="tab-btn" data-gtab="g-floyd">Floyd-Warshall</button>
+          <button class="tab-btn" data-gtab="g-flow">Max-Flow</button>
+        </div>
+
+        <!-- BFS -->
+        <div class="graph-tab-content active" id="g-bfs">
+          <div class="dp-controls">
+            <label class="ctrl-label">Start node: <input type="number" id="bfs-start" value="0" min="0" max="6"
+                style="width:60px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px"></label>
+            <button class="btn btn-primary" id="bfs-run-btn">▶ Run BFS</button>
+          </div>
+          <div class="dp-info" id="bfs-info">BFS explores all neighbors at the current depth before going deeper.</div>
+          <div class="canvas-wrap"><canvas id="bfs-canvas" height="380"></canvas></div>
+        </div>
+
+        <!-- DFS -->
+        <div class="graph-tab-content" id="g-dfs">
+          <div class="dp-controls">
+            <label class="ctrl-label">Start node: <input type="number" id="dfs-start" value="0" min="0" max="6"
+                style="width:60px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px"></label>
+            <button class="btn btn-primary" id="dfs-run-btn">▶ Run DFS</button>
+          </div>
+          <div class="dp-info" id="dfs-info">DFS explores as far as possible along each branch before backtracking.
+          </div>
+          <div class="canvas-wrap"><canvas id="dfs-canvas" height="380"></canvas></div>
+        </div>
+
+        <!-- Topological Sort -->
+        <div class="graph-tab-content" id="g-topo">
+          <div class="dp-controls">
+            <button class="btn btn-primary" id="topo-run-btn">▶ Run Topological Sort</button>
+          </div>
+          <div class="dp-info" id="topo-info">Kahn's algorithm finds a linear ordering of vertices in a DAG.</div>
+          <div class="canvas-wrap"><canvas id="topo-canvas" height="380"></canvas></div>
+        </div>
+
+        <!-- SCC -->
+        <div class="graph-tab-content" id="g-scc">
+          <div class="dp-controls">
+            <button class="btn btn-primary" id="scc-run-btn">▶ Run Kosaraju's SCC</button>
+          </div>
+          <div class="dp-info" id="scc-info">Kosaraju's algorithm finds all strongly connected components in a directed
+            graph.</div>
+          <div class="canvas-wrap"><canvas id="scc-canvas" height="300"></canvas></div>
+        </div>
+
+        <!-- Floyd-Warshall -->
+        <div class="graph-tab-content" id="g-floyd">
+          <div class="dp-controls">
+            <button class="btn btn-primary" id="floyd-run-btn">▶ Run Floyd-Warshall</button>
+          </div>
+          <div class="dp-info" id="floyd-info">Floyd-Warshall finds shortest paths between all pairs of vertices.</div>
+          <div class="table-wrap">
+            <table class="dp-table" id="floyd-table"></table>
+          </div>
+        </div>
+
+        <!-- Max-Flow -->
+        <div class="graph-tab-content" id="g-flow">
+          <div class="dp-controls">
+            <button class="btn btn-primary" id="flow-run-btn">▶ Run Ford-Fulkerson</button>
+          </div>
+          <div class="dp-info" id="flow-info">Ford-Fulkerson finds the maximum flow from source S to sink T.</div>
+          <div class="canvas-wrap"><canvas id="flow-canvas" height="340"></canvas></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- AI ADVISOR PANEL -->
+  <div id="ai-panel" class="collapsed">
+    <div class="ai-toggle" id="ai-toggle-btn">🤖 AI Advisor <span style="font-size:.6rem;opacity:.6">▲</span></div>
+    <div class="ai-body">
+      <div class="ai-messages" id="ai-messages"></div>
+      <div class="ai-quick-btns">
+        <button class="ai-quick-btn" id="ai-q1">Explain this algo</button>
+        <button class="ai-quick-btn" id="ai-q2">Best use case?</button>
+        <button class="ai-quick-btn" id="ai-q3">Compare with others</button>
+        <button class="ai-quick-btn" id="ai-q4">Explain my results</button>
+      </div>
+      <div class="ai-input-row">
+        <input type="text" id="ai-input" placeholder="Ask the AI anything about algorithms..." />
+        <button class="btn btn-primary" id="ai-send">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
