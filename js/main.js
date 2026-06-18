@@ -6,7 +6,6 @@ import * as graph from './graph.js';
 import * as battle from './battle.js';
 import { initQuiz } from './quiz.js';
 import { initComplexityChart, runComplexityAnalysis } from './complexity.js';
-import { initArtCanvas, startArt, stopArt, downloadArt } from './art.js';
 import { toggleAI, sendAI, aiQuick, autoAIGreet } from './ai.js';
 
 const SEARCH_ALGOS = ['linear', 'binary', 'jump', 'interpolation', 'exponential'];
@@ -142,18 +141,18 @@ async function runAlgorithm() {
   const a = [...arr];
   try {
     switch (state.currentAlgo) {
-      case 'bubble':    await sorting.bubbleSort(a); break;
+      case 'bubble': await sorting.bubbleSort(a); break;
       case 'selection': await sorting.selectionSort(a); break;
       case 'insertion': await sorting.insertionSort(a); break;
-      case 'merge':     await sorting.mergeSort(a); break;
-      case 'quick':     await sorting.quickSort(a); break;
-      case 'heap':      await sorting.heapSort(a); break;
-      case 'shell':     await sorting.shellSort(a); break;
-      case 'linear':        await searching.linearSearch(a); break;
-      case 'binary':        await searching.binarySearch(a); break;
-      case 'jump':          await searching.jumpSearch(a); break;
+      case 'merge': await sorting.mergeSort(a); break;
+      case 'quick': await sorting.quickSort(a); break;
+      case 'heap': await sorting.heapSort(a); break;
+      case 'shell': await sorting.shellSort(a); break;
+      case 'linear': await searching.linearSearch(a); break;
+      case 'binary': await searching.binarySearch(a); break;
+      case 'jump': await searching.jumpSearch(a); break;
       case 'interpolation': await searching.interpolationSearch(a); break;
-      case 'exponential':   await searching.exponentialSearch(a); break;
+      case 'exponential': await searching.exponentialSearch(a); break;
       default: log('Unknown algorithm!', 'warn');
     }
   } catch (e) {
@@ -162,8 +161,42 @@ async function runAlgorithm() {
   setRunning(false);
 }
 
+// ---- Theme Toggle ----
+function initThemeToggle() {
+  const toggleBtn = document.getElementById('theme-toggle-btn');
+  const knob = document.getElementById('theme-toggle-knob');
+  const root = document.documentElement;
+
+  // Load saved theme (default: dark)
+  const savedTheme = localStorage.getItem('algoviz-theme') || 'dark';
+  if (savedTheme === 'light') {
+    root.setAttribute('data-theme', 'light');
+    if (knob) knob.textContent = '☀️';
+  } else {
+    root.removeAttribute('data-theme');
+    if (knob) knob.textContent = '🌙';
+  }
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const isLight = root.getAttribute('data-theme') === 'light';
+      if (isLight) {
+        root.removeAttribute('data-theme');
+        localStorage.setItem('algoviz-theme', 'dark');
+        if (knob) knob.textContent = '🌙';
+      } else {
+        root.setAttribute('data-theme', 'light');
+        localStorage.setItem('algoviz-theme', 'light');
+        if (knob) knob.textContent = '☀️';
+      }
+    });
+  }
+}
+
 // ---- DOM Ready ----
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize theme toggle first
+  initThemeToggle();
   // Speed slider label
   const speedSlider = document.getElementById('speed-slider');
   const speedLabel = document.getElementById('speed-label');
