@@ -162,12 +162,24 @@ export async function runMCM() {
 
 // 0/1 Knapsack
 export async function runKnapsack() {
-  const W = parseInt(document.getElementById('ks-cap')?.value || 10);
-  const items = [{ w: 2, v: 6 }, { w: 2, v: 10 }, { w: 3, v: 12 }, { w: 5, v: 13 }, { w: 7, v: 15 }];
+  const W = Math.max(1, parseInt(document.getElementById('ks-cap')?.value || 10));
+  const info = document.getElementById('ks-info');
+
+  // Parse items from input field: "w,v w,v ..."
+  const rawItems = (document.getElementById('ks-items')?.value || '2,6 2,10 3,12 5,13 7,15').trim();
+  const items = rawItems.split(/\s+/).map(pair => {
+    const [w, v] = pair.split(',').map(Number);
+    return { w, v };
+  }).filter(it => !isNaN(it.w) && !isNaN(it.v) && it.w > 0 && it.v > 0);
+
+  if (items.length === 0) {
+    if (info) info.textContent = '⚠ No valid items found. Format: w,v w,v (e.g. 2,6 3,10)';
+    return;
+  }
+
   const n = items.length;
   const dp = Array.from({ length: n + 1 }, () => new Array(W + 1).fill(0));
   const t = document.getElementById('ks-table');
-  const info = document.getElementById('ks-info');
   if (!t || !info) return;
   let html = '<thead><tr><th>Item\\W</th>';
   for (let i = 0; i <= W; i++) html += '<th>' + i + '</th>';
@@ -198,6 +210,7 @@ export async function runKnapsack() {
   }
   info.innerHTML = '<strong>Max Value:</strong> <span class="acc">' + dp[n][W] + '</span> with capacity ' + W;
 }
+
 
 // N-Queens Backtracking
 let nqStop = false;

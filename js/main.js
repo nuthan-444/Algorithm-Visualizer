@@ -6,7 +6,7 @@ import * as graph from './graph.js';
 import * as battle from './battle.js';
 import { initQuiz } from './quiz.js';
 import { initComplexityChart, runComplexityAnalysis } from './complexity.js';
-import { toggleAI, sendAI, aiQuick, autoAIGreet } from './ai.js';
+import { toggleAI, sendAI, aiQuick, autoAIGreet, initAIConfig } from './ai.js';
 
 const SEARCH_ALGOS = ['linear', 'binary', 'jump', 'interpolation', 'exponential'];
 const DP_TABS = ['dp-concepts', 'dp-fib', 'dp-lcs', 'dp-mcm', 'dp-knapsack', 'dp-nqueens', 'dp-coloring'];
@@ -281,13 +281,61 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('flow-run-btn')?.addEventListener('click', () => graph.runFordFulkerson());
 
   // AI controls
-  document.getElementById('ai-toggle-btn')?.addEventListener('click', () => toggleAI());
+  document.getElementById('ai-toggle-btn')?.addEventListener('click', (e) => {
+    // Don't toggle if clicking the edit button inside the toggle bar
+    if (e.target.closest('#ai-edit-config-btn')) return;
+    toggleAI();
+  });
   document.getElementById('ai-send')?.addEventListener('click', () => sendAI());
   document.getElementById('ai-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') sendAI(); });
   document.getElementById('ai-q1')?.addEventListener('click', () => aiQuick('Explain ' + (algoTitles[state.currentAlgo] || state.currentAlgo) + ' in simple terms.'));
   document.getElementById('ai-q2')?.addEventListener('click', () => aiQuick('What is the best use case for ' + (algoTitles[state.currentAlgo] || state.currentAlgo) + '?'));
   document.getElementById('ai-q3')?.addEventListener('click', () => aiQuick('Compare ' + (algoTitles[state.currentAlgo] || state.currentAlgo) + ' with similar algorithms.'));
   document.getElementById('ai-q4')?.addEventListener('click', () => aiQuick('Explain my visualization results: ' + state.comparisons + ' comparisons, ' + state.swaps + ' swaps.'));
+
+  // AI config panel wiring
+  initAIConfig();
+
+  // Hamburger sidebar toggle (mobile)
+  const hamburgerBtn = document.getElementById('hamburger-btn');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+
+  function openSidebar() {
+    sidebar?.classList.add('open');
+    overlay?.classList.add('active');
+    hamburgerBtn?.classList.add('open');
+    document.body.style.overflow = 'hidden'; // prevent background scroll on mobile
+  }
+
+  function closeSidebar() {
+    sidebar?.classList.remove('open');
+    overlay?.classList.remove('active');
+    hamburgerBtn?.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  hamburgerBtn?.addEventListener('click', () => {
+    if (sidebar?.classList.contains('open')) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  });
+
+  // Close sidebar when clicking the overlay
+  overlay?.addEventListener('click', closeSidebar);
+
+  // Close sidebar when any sidebar button is clicked on mobile
+  document.querySelectorAll('#sidebar .algo-btn, #sidebar .algo-group-header').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (window.innerWidth <= 700) {
+        // Small delay so the click action fires first
+        setTimeout(closeSidebar, 100);
+      }
+    });
+  });
+
 
   // Quiz
   initQuiz();

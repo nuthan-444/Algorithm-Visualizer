@@ -1,15 +1,26 @@
 import { state, algoTitles } from './globals.js';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-// Uses Groq API. Falls back to local smart responses if the API
-// fails, so the chat always works.
-const GROQ_API_KEY = 'YOUR_API_KEY';
-const GROQ_URL = 'URL';
-const GROQ_MODEL = 'LLM_MODEL_NAME';
+// ─── Config (read dynamically from localStorage) ───────────────────────────────
+const AI_CONFIG_KEY = 'algoviz-ai-config';
 
+function getAIConfig() {
+  try {
+    const raw = localStorage.getItem(AI_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveAIConfig(key, model, url) {
+  localStorage.setItem(AI_CONFIG_KEY, JSON.stringify({ key, model, url }));
+}
+
+function clearAIConfig() {
+  localStorage.removeItem(AI_CONFIG_KEY);
+}
 
 let aiCollapsed = true;
 let aiConversationHistory = [];
+let aiConfigured = false; // tracks whether user has set up config OR skipped to offline mode
 
 // ─── Local knowledge base (always works, no API needed) ───────────────────────
 const LOCAL_ANSWERS = {
@@ -96,15 +107,12 @@ function detectQuestionType(text) {
 function generateLocalResponse(text) {
   const algo = state.currentAlgo;
   const qtype = detectQuestionType(text);
-  const t = text.toLowerCase();
 
-  // Try to get a specific answer first
   if (qtype !== 'general' && qtype !== 'results') {
     const ans = getLocalAnswer(algo, qtype);
     if (ans) return ans;
   }
 
-  // Results explanation
   if (qtype === 'results') {
     const { comparisons, swaps, array } = state;
     const n = array.length;
@@ -115,7 +123,6 @@ function generateLocalResponse(text) {
     return `Your ${algoTitles[algo] || algo} run: ${comparisons} comparisons and ${swaps} swaps on ${n} elements. This is ${efficiency} for this algorithm and array size. ${comparisons <= expected * 1.5 ? '✅ Great performance!' : 'Consider using a faster algorithm for larger arrays.'}`;
   }
 
-  // Fallback general responses
   const generals = [
     `${algoTitles[algo] || algo} is a classic algorithm! ${getLocalAnswer(algo, 'explain') || 'Try clicking Visualize to see it in action.'}`,
     `Great question about ${algoTitles[algo] || algo}! ${getLocalAnswer(algo, 'usecase') || 'Explore the visualization to understand the pattern.'}`,
@@ -124,8 +131,21 @@ function generateLocalResponse(text) {
   return generals[Math.floor(Math.random() * generals.length)];
 }
 
-// ─── Groq API call ────────────────────────────────────────────────────────────
-async function callGroq(userMessage) {
+// ─── API call with full error/offline handling ─────────────────────────────────
+const OFFLINE_SENTINEL = '__OFFLINE__';
+const NETWORK_ERR_SENTINEL = '__NETWORK_ERROR__';
+const API_ERR_PREFIX = '__API_ERROR__:';
+
+async function callLLM(userMessage) {
+  // 1. Offline check
+  if (!navigator.onLine) return OFFLINE_SENTINEL;
+
+  const cfg = getAIConfig();
+  if (!cfg || !cfg.key || !cfg.url || !cfg.model) return NETWORK_ERR_SENTINEL;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
   try {
     const history = aiConversationHistory.slice(-6).map(m => ({
       role: m.role,
@@ -133,7 +153,7 @@ async function callGroq(userMessage) {
     }));
 
     const payload = {
-      model: GROQ_MODEL,
+      model: cfg.model.trim(),
       messages: [
         {
           role: 'system',
@@ -145,35 +165,103 @@ Be concise (2-4 sentences), educational, and encouraging. Use simple language.`
         ...history,
         { role: 'user', content: userMessage }
       ],
-      max_tokens: 200,
-      temperature: 0.7
+      max_tokens: 300,
+      temperature: 0.7,
+      stream: false
     };
 
-    const res = await fetch(GROQ_URL, {
+    const res = await fetch(cfg.url.trim(), {
       method: 'POST',
+      mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
+        'Authorization': `Bearer ${cfg.key.trim()}`
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
 
-    if (!res.ok) return null;
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.warn('[AlgoViz AI] API error', res.status, errText);
+      return `${API_ERR_PREFIX}${res.status}`;
+    }
     const data = await res.json();
-    return data.choices?.[0]?.message?.content || null;
-  } catch {
-    return null;
+    const content = data?.choices?.[0]?.message?.content
+      || data?.choices?.[0]?.text
+      || null;
+    return content;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      return `${API_ERR_PREFIX}timeout`;
+    }
+    console.warn('[AlgoViz AI] Fetch error:', err.message);
+    return NETWORK_ERR_SENTINEL;
   }
 }
 
-// ─── UI helpers ───────────────────────────────────────────────────────────────
+// ─── UI helpers ────────────────────────────────────────────────────────────────
 export function toggleAI() {
-  aiCollapsed = !aiCollapsed;
   const panel = document.getElementById('ai-panel');
-  if (panel) panel.classList.toggle('collapsed', aiCollapsed);
+  if (!panel) return;
+
+  // If currently collapsed, opening it — check config
+  if (aiCollapsed) {
+    aiCollapsed = false;
+    panel.classList.remove('collapsed');
+    const cfg = getAIConfig();
+    if (!aiConfigured && !cfg) {
+      // Show config form
+      showConfigPanel();
+    } else {
+      // Show chat panel
+      showChatPanel(cfg);
+    }
+  } else {
+    aiCollapsed = true;
+    panel.classList.add('collapsed');
+  }
 }
 
 window._toggleAI = toggleAI;
+
+function showConfigPanel() {
+  const configEl = document.getElementById('ai-config-panel');
+  const chatEl = document.getElementById('ai-chat-panel');
+  const editBtn = document.getElementById('ai-edit-config-btn');
+  const clearBtn = document.getElementById('ai-cfg-clear');
+  if (configEl) configEl.style.display = 'block';
+  if (chatEl) chatEl.style.display = 'none';
+  if (editBtn) editBtn.style.display = 'none';
+
+  // Pre-fill if existing config; show Clear button in edit mode
+  const cfg = getAIConfig();
+  if (cfg) {
+    const keyInput = document.getElementById('ai-cfg-key');
+    const modelInput = document.getElementById('ai-cfg-model');
+    const urlInput = document.getElementById('ai-cfg-url');
+    if (keyInput) keyInput.value = cfg.key || '';
+    if (modelInput) modelInput.value = cfg.model || '';
+    if (urlInput) urlInput.value = cfg.url || '';
+    if (clearBtn) clearBtn.style.display = 'inline-flex';
+  } else {
+    if (clearBtn) clearBtn.style.display = 'none';
+  }
+}
+
+
+function showChatPanel(cfg) {
+  const configEl = document.getElementById('ai-config-panel');
+  const chatEl = document.getElementById('ai-chat-panel');
+  const editBtn = document.getElementById('ai-edit-config-btn');
+  if (configEl) configEl.style.display = 'none';
+  if (chatEl) chatEl.style.display = 'block';
+  // Show edit button only if config exists (not in offline-only mode)
+  if (editBtn) editBtn.style.display = cfg ? 'inline-flex' : 'none';
+}
 
 function addAIMessage(text, role = 'ai') {
   const msgs = document.getElementById('ai-messages');
@@ -191,25 +279,142 @@ function setStatus(text) {
   if (s) s.textContent = text;
 }
 
+// ─── Config panel wiring (called once on DOM ready) ───────────────────────────
+export function initAIConfig() {
+  const saveBtn = document.getElementById('ai-cfg-save');
+  const skipBtn = document.getElementById('ai-cfg-skip');
+  const editBtn = document.getElementById('ai-edit-config-btn');
+  const clearBtn = document.getElementById('ai-cfg-clear');
+
+  saveBtn?.addEventListener('click', async () => {
+    const key = document.getElementById('ai-cfg-key')?.value.trim();
+    const model = document.getElementById('ai-cfg-model')?.value.trim();
+    const url = document.getElementById('ai-cfg-url')?.value.trim();
+
+    if (!key || !model || !url) {
+      alert('Please fill in all fields (API Key, Model, and URL).');
+      return;
+    }
+
+    // Show testing state
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ Testing connection...';
+
+    // Quick test call with a tiny prompt
+    let testOk = false;
+    let testError = '';
+    try {
+      if (!navigator.onLine) {
+        testError = 'You are offline.';
+      } else {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(url, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+          body: JSON.stringify({
+            model: model,
+            messages: [{ role: 'user', content: 'Say OK in one word.' }],
+            max_tokens: 5,
+            temperature: 0
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(tid);
+        if (res.ok) {
+          testOk = true;
+        } else {
+          const txt = await res.text().catch(() => '');
+          testError = `HTTP ${res.status} — ${txt.slice(0, 120)}`;
+        }
+      }
+    } catch (e) {
+      testError = e.name === 'AbortError' ? 'Request timed out.' : e.message;
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 Save & Start Chat';
+
+    if (!testOk) {
+      const infoEl = document.getElementById('ai-config-desc');
+      if (infoEl) {
+        infoEl.textContent = `⚠ API test failed: ${testError}  — check your key/model/URL.`;
+        infoEl.style.color = 'var(--accent2)';
+      }
+      return; // don't save bad config
+    }
+
+    saveAIConfig(key, model, url);
+    aiConfigured = true;
+    showChatPanel({ key, model, url });
+    addAIMessage('✅ API connected! Ask me anything about algorithms.', 'ai');
+  });
+
+  skipBtn?.addEventListener('click', () => {
+    aiConfigured = true;
+    showChatPanel(null);
+    addAIMessage('📡 Running in offline mode — using built-in algorithm knowledge base.', 'ai');
+  });
+
+  editBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showConfigPanel();
+  });
+
+  clearBtn?.addEventListener('click', () => {
+    clearAIConfig();
+    aiConfigured = false;
+    // Reset desc text style
+    const descEl = document.getElementById('ai-config-desc');
+    if (descEl) {
+      descEl.textContent = 'Enter your LLM API details to enable AI responses. Without this, built-in offline responses will be used.';
+      descEl.style.color = '';
+    }
+    showConfigPanel();
+  });
+}
+
 // ─── Main chat handler ─────────────────────────────────────────────────────────
-async function processMessage(userText, isAuto = false) {
+async function processMessage(userText) {
   const sendBtn = document.getElementById('ai-send');
   if (sendBtn) sendBtn.disabled = true;
   const thinking = addAIMessage('🤔 Thinking...', 'ai thinking');
   setStatus('AI THINKING...');
 
   try {
-    // 1. Try Groq API
-    let reply = await callGroq(userText);
+    let reply = await callLLM(userText);
+    let warningMsg = null;
 
-    // 2. Fall back to local smart responses
+    // Handle error sentinels
+    if (reply === OFFLINE_SENTINEL) {
+      warningMsg = '📡 You\'re offline — using built-in responses.';
+      reply = null;
+    } else if (typeof reply === 'string' && reply.startsWith(API_ERR_PREFIX)) {
+      const status = reply.slice(API_ERR_PREFIX.length);
+      warningMsg = `⚠ LLM API returned error (status ${status}) — switching to offline mode.`;
+      reply = null;
+    } else if (reply === NETWORK_ERR_SENTINEL) {
+      warningMsg = '⚠ LLM API is not responding — using offline mode.';
+      reply = null;
+    }
+
+    // Fall back to local response if needed
     if (!reply) {
-      // Small delay so the "Thinking..." message feels real
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise(r => setTimeout(r, 400));
       reply = generateLocalResponse(userText);
     }
 
     if (thinking) thinking.remove();
+
+    // Show warning first if there is one
+    if (warningMsg) {
+      const warnEl = addAIMessage(warningMsg, 'ai api-warn');
+      if (warnEl && typeof gsap !== 'undefined') {
+        gsap.fromTo(warnEl, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.3 });
+      }
+    }
+
     const msgEl = addAIMessage(reply, 'ai');
     aiConversationHistory.push({ role: 'assistant', content: reply });
     if (aiConversationHistory.length > 20) aiConversationHistory = aiConversationHistory.slice(-16);
@@ -223,7 +428,6 @@ async function processMessage(userText, isAuto = false) {
 
   if (sendBtn) sendBtn.disabled = false;
   setStatus('AI READY');
-  if (aiCollapsed && !isAuto) toggleAI();
 }
 
 // ─── Public exports ────────────────────────────────────────────────────────────
@@ -234,10 +438,18 @@ export function aiQuick(text) {
 }
 
 export function autoAIGreet() {
+  // Only greet if chat is already shown (config was previously saved)
+  const cfg = getAIConfig();
+  if (!cfg) return; // don't auto-greet before config is set
+
   const algo = algoTitles[state.currentAlgo] || state.currentAlgo;
   const greet = `Hi! I'm your AI algorithm tutor in AlgoViz Ultimate. 🤖 You're exploring ${algo}. ${getLocalAnswer(state.currentAlgo, 'explain') || 'Click Visualize to see it in action, then ask me anything!'} Ask me to explain, compare, or find the best use case!`;
+
+  // Ensure chat panel is shown if configured
+  aiConfigured = true;
+  showChatPanel(cfg);
+
   if (typeof gsap === 'undefined') {
-    // Wait for DOM to be ready
     setTimeout(() => {
       const msg = addAIMessage(greet, 'ai');
       if (msg) aiConversationHistory.push({ role: 'assistant', content: greet });

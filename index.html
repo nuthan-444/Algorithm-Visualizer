@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AlgoViz - Ultra Pro</title>
+  <title>AlgoViz</title>
   <meta name="description"
     content="Interactive algorithm visualizer with sorting, searching, dynamic programming, graph algorithms, battle mode, quiz, and complexity charts.">
   <link
@@ -27,9 +27,14 @@
 
 <body>
   <header>
-    <div>
-      <div class="logo">Algo<span>Viz</span> <span class="pro-badge">ULTIMATE</span></div>
-      <span class="logo-sub">INTERACTIVE ALGORITHM VISUALIZER</span>
+    <div class="header-left">
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle sidebar">
+        <span></span><span></span><span></span>
+      </button>
+      <div>
+        <div class="logo">Algo<span>Viz</span> <span class="pro-badge"></span></div>
+        <span class="logo-sub">INTERACTIVE ALGORITHM VISUALIZER</span>
+      </div>
     </div>
     <div class="header-modes">
       <button class="mode-btn mode-active" data-mode="visualize" id="mode-visualize">⚙ Visualize</button>
@@ -39,8 +44,8 @@
     </div>
     <div class="status-bar">
       <div class="status-dot"></div>
-      <span>SYSTEM ONLINE</span>
-      <span id="ai-status" style="color:var(--accent4)">AI READY</span>
+      <span class="status-text">SYSTEM ONLINE</span>
+      <span id="ai-status" style="color:var(--accent4)" class="status-text">AI READY</span>
       <button class="theme-toggle" id="theme-toggle-btn" title="Toggle Dark / Light Mode" aria-label="Toggle theme">
         <span class="theme-toggle-knob" id="theme-toggle-knob">🌙</span>
       </button>
@@ -48,7 +53,8 @@
   </header>
 
   <div class="app">
-    <aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside id="sidebar">
       <div class="sidebar-title">Algorithms</div>
       <!-- Sorting group -->
       <div class="algo-group open" id="grp-sort">
@@ -460,12 +466,16 @@
         <!-- Knapsack -->
         <div class="tab-content" id="dp-knapsack">
           <div class="dp-controls">
-            <label class="ctrl-label">Capacity: <input type="number" id="ks-cap" value="10" min="5" max="20"
+            <label class="ctrl-label">Capacity: <input type="number" id="ks-cap" value="10" min="5" max="30"
                 style="width:70px;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:4px 8px"></label>
             <button class="btn btn-primary" id="ks-run-btn">▶ Run Knapsack</button>
           </div>
-          <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.5rem">Items: (w=2,v=6), (w=2,v=10),
-            (w=3,v=12), (w=5,v=13), (w=7,v=15)</p>
+          <div class="dp-controls" style="margin-top:8px;flex-direction:column;gap:4px">
+            <div class="ctrl-label">Items — format: <code style="color:var(--accent)">w,v w,v w,v</code> (weight,value
+              pairs)</div>
+            <input type="text" id="ks-items" value="2,6 2,10 3,12 5,13 7,15" placeholder="e.g. 2,6 3,10 5,12"
+              style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:.72rem">
+          </div>
           <div class="dp-info" id="ks-info">Click Run to fill the knapsack DP table.</div>
           <div class="table-wrap">
             <table class="dp-table" id="ks-table"></table>
@@ -579,18 +589,50 @@
 
   <!-- AI ADVISOR PANEL -->
   <div id="ai-panel" class="collapsed">
-    <div class="ai-toggle" id="ai-toggle-btn">🤖 AI Advisor <span style="font-size:.6rem;opacity:.6">▲</span></div>
+    <div class="ai-toggle" id="ai-toggle-btn">
+      🤖 AI Advisor <span style="font-size:.6rem;opacity:.6">▲</span>
+      <button class="ai-edit-btn" id="ai-edit-config-btn" title="Edit API Config" style="display:none">⚙ Edit
+        Config</button>
+    </div>
     <div class="ai-body">
-      <div class="ai-messages" id="ai-messages"></div>
-      <div class="ai-quick-btns">
-        <button class="ai-quick-btn" id="ai-q1">Explain this algo</button>
-        <button class="ai-quick-btn" id="ai-q2">Best use case?</button>
-        <button class="ai-quick-btn" id="ai-q3">Compare with others</button>
-        <button class="ai-quick-btn" id="ai-q4">Explain my results</button>
+      <!-- Config panel (shown when no config stored) -->
+      <div class="ai-config-panel" id="ai-config-panel">
+        <div class="ai-config-title">🔑 Configure AI API</div>
+        <div class="ai-config-desc" id="ai-config-desc">Enter your LLM API details to enable AI responses. Without this,
+          built-in offline responses will be used.</div>
+        <div class="ai-config-field">
+          <label class="ai-config-label">API Key</label>
+          <input type="password" id="ai-cfg-key" class="ai-cfg-input" placeholder="e.g. sk-... or gsk_..."
+            autocomplete="off" />
+        </div>
+        <div class="ai-config-field">
+          <label class="ai-config-label">Model Name</label>
+          <input type="text" id="ai-cfg-model" class="ai-cfg-input" placeholder="e.g. llama-3.3-70b-versatile" />
+        </div>
+        <div class="ai-config-field">
+          <label class="ai-config-label">API URL</label>
+          <input type="text" id="ai-cfg-url" class="ai-cfg-input"
+            placeholder="e.g. https://api.groq.com/openai/v1/chat/completions" />
+        </div>
+        <div class="ai-config-actions">
+          <button class="btn btn-primary" id="ai-cfg-save">💾 Save & Start Chat</button>
+          <button class="btn btn-secondary" id="ai-cfg-skip">Use Offline Mode</button>
+          <button class="btn btn-danger" id="ai-cfg-clear" style="display:none">🗑 Clear Config</button>
+        </div>
       </div>
-      <div class="ai-input-row">
-        <input type="text" id="ai-input" placeholder="Ask the AI anything about algorithms..." />
-        <button class="btn btn-primary" id="ai-send">Send</button>
+      <!-- Normal chat UI (shown when config is stored) -->
+      <div class="ai-chat-panel" id="ai-chat-panel" style="display:none">
+        <div class="ai-messages" id="ai-messages"></div>
+        <div class="ai-quick-btns">
+          <button class="ai-quick-btn" id="ai-q1">Explain this algo</button>
+          <button class="ai-quick-btn" id="ai-q2">Best use case?</button>
+          <button class="ai-quick-btn" id="ai-q3">Compare with others</button>
+          <button class="ai-quick-btn" id="ai-q4">Explain my results</button>
+        </div>
+        <div class="ai-input-row">
+          <input type="text" id="ai-input" placeholder="Ask the AI anything about algorithms..." />
+          <button class="btn btn-primary" id="ai-send">Send</button>
+        </div>
       </div>
     </div>
   </div>
