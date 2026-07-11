@@ -1,4 +1,4 @@
-import { state, complexityData, pseudoCodes, algoTitles, generateRandom, parseArray, stopAlgorithm, setRunning, resetStats, clearLog, log, updateLegend, renderBars, showWelcome } from './globals.js';
+import { state, complexityData, pseudoCodes, algoTitles, generateRandom, parseArray, stopAlgorithm, setRunning, resetStats, clearLog, log, updateLegend, renderBars, showWelcome, SPEEDS } from './globals.js';
 import * as sorting from './sorting.js';
 import * as searching from './searching.js';
 import * as dp from './dp.js';
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const speedSlider = document.getElementById('speed-slider');
   const speedLabel = document.getElementById('speed-label');
   if (speedSlider && speedLabel) {
-    speedSlider.addEventListener('input', () => { speedLabel.textContent = speedSlider.value + 'x'; });
+    speedSlider.addEventListener('input', () => { speedLabel.textContent = SPEEDS[speedSlider.value] + 'x'; });
   }
 
   // Sidebar group toggles

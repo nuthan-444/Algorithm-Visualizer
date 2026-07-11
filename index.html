@@ -129,7 +129,7 @@
           </div>
           <div class="ctrl-group">
             <div class="ctrl-label">Speed</div>
-            <div class="speed-wrap"><input type="range" id="speed-slider" min="1" max="10" value="5"><span
+            <div class="speed-wrap"><input type="range" id="speed-slider" min="0" max="11" value="6"><span
                 class="speed-val" id="speed-label">5x</span></div>
           </div>
           <div class="ctrl-group">
@@ -224,10 +224,10 @@
             <div class="ctrl-group">
               <div class="ctrl-label">Speed</div>
               <select id="battle-speed">
-                <option value="3">Slow</option>
-                <option value="5" selected>Medium</option>
-                <option value="8">Fast</option>
-                <option value="10">Ultra</option>
+                <option value="2">Slow</option>
+                <option value="6" selected>Medium</option>
+                <option value="9">Fast</option>
+                <option value="11">Ultra</option>
               </select>
             </div>
             <button class="btn btn-primary" id="battle-start-btn">⚔ Start Battle</button>
@@ -281,6 +281,8 @@
             <span>Score: <b id="quiz-score">0</b></span>
             <span>Question: <b id="quiz-q-num">1</b> / <b id="quiz-q-total">10</b></span>
             <span>Streak: <b id="quiz-streak">0</b> 🔥</span>
+            <span id="quiz-source-badge" style="margin-left:auto;font-size:0.75rem;padding:2px 8px;border-radius:4px;display:none;"></span>
+
           </div>
           <div class="quiz-card" id="quiz-card">
             <div class="quiz-question" id="quiz-question">Click "Start Quiz" to begin!</div>

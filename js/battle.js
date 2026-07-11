@@ -1,4 +1,4 @@
-import { sleep, algoTitles, DELAY_MAP } from './globals.js';
+import { sleep, algoTitles, DELAYS } from './globals.js';
 
 let battleRunning = false;
 let battleStop = false;
@@ -188,7 +188,7 @@ export async function startBattle() {
   b1cmp = 0; b1swp = 0; b2cmp = 0; b2swp = 0;
   renderBattleBars('b1-bars', arr1, {});
   renderBattleBars('b2-bars', arr2, {});
-  const delay = DELAY_MAP(spd);
+  const delay = DELAYS[spd] || 580;
   let b1time = 0, b2time = 0;
   const t0 = Date.now();
   await Promise.all([

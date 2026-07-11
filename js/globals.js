@@ -107,11 +107,15 @@ export const algoTitles = {
   interpolation: 'INTERPOLATION SEARCH', exponential: 'EXPONENTIAL SEARCH'
 };
 
-// Delay map: speed slider value 1-10 → milliseconds
-export const DELAY_MAP = s => Math.max(30, 1100 - s * 105);
+// Mapping array from slider index to exact "speed multiple" labels (12 steps)
+export const SPEEDS = [0.25, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+// Corresponding delays in MS for each speed index
+export const DELAYS = [3000, 1500, 1000, 895, 790, 685, 580, 475, 370, 265, 160, 50];
 
 export function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-export function getDelay() { return DELAY_MAP(parseInt(document.getElementById('speed-slider')?.value || 5)); }
+export function getSpeedFloat() { return SPEEDS[parseInt(document.getElementById('speed-slider')?.value || 6)] || 5; }
+export function getDelay() { return DELAYS[parseInt(document.getElementById('speed-slider')?.value || 6)] || 580; }
+
 
 export function log(msg, type = '') {
   state.lastLogMessages.push(msg);
@@ -260,7 +264,8 @@ export function rebuildBar(idx, arr) {
   if (!bar || !wrap) return;
   const maxVal = Math.max(...arr);
   if (typeof gsap !== 'undefined') {
-    gsap.to(bar, { height: ((arr[idx] / maxVal) * 92) + '%', duration: .14, ease: 'power2.out' });
+    const dur = 0.14 * (5 / getSpeedFloat());
+    gsap.to(bar, { height: ((arr[idx] / maxVal) * 92) + '%', duration: dur, ease: 'power2.out' });
   } else {
     bar.style.height = ((arr[idx] / maxVal) * 92) + '%';
   }
@@ -273,8 +278,9 @@ export async function animateSwap(i, j, arr) {
   const bj = document.getElementById('bar-' + j);
   if (!bi || !bj) return;
   if (typeof gsap !== 'undefined') {
-    gsap.to(bi, { height: ((arr[i] / maxVal) * 92) + '%', duration: .16, ease: 'power2.out' });
-    gsap.to(bj, { height: ((arr[j] / maxVal) * 92) + '%', duration: .16, ease: 'power2.out' });
+    const dur = 0.16 * (5 / getSpeedFloat());
+    gsap.to(bi, { height: ((arr[i] / maxVal) * 92) + '%', duration: dur, ease: 'power2.out' });
+    gsap.to(bj, { height: ((arr[j] / maxVal) * 92) + '%', duration: dur, ease: 'power2.out' });
   } else {
     bi.style.height = ((arr[i] / maxVal) * 92) + '%';
     bj.style.height = ((arr[j] / maxVal) * 92) + '%';
@@ -283,16 +289,20 @@ export async function animateSwap(i, j, arr) {
   const wj = document.getElementById('bw-' + j);
   if (wi) { const l = wi.querySelector('.bar-val'); if (l && arr.length <= 25) l.textContent = arr[i]; }
   if (wj) { const l = wj.querySelector('.bar-val'); if (l && arr.length <= 25) l.textContent = arr[j]; }
-  return new Promise(r => setTimeout(r, 160));
+  
+  // Wait proportional to the GSAP animation plus a tiny buffer, scaled by speed
+  const waitMs = 160 * (5 / getSpeedFloat());
+  return new Promise(r => setTimeout(r, waitMs));
 }
 export async function celebrateAll(n) {
+  const dur = 0.28 * (5 / getSpeedFloat());
   for (let i = 0; i < n; i++) {
     const b = document.getElementById('bar-' + i);
     if (b && typeof gsap !== 'undefined') {
-      gsap.fromTo(b, { scaleY: 1.08 }, { scaleY: 1, duration: .28, delay: i * .025, ease: 'elastic.out(1,0.5)', transformOrigin: 'bottom center' });
+      gsap.fromTo(b, { scaleY: 1.08 }, { scaleY: 1, duration: dur, delay: i * .025, ease: 'elastic.out(1,0.5)', transformOrigin: 'bottom center' });
     }
   }
-  await sleep(n * 25 + 350);
+  await sleep(n * 25 + (dur * 1000 + 70));
 }
 export function showWelcome() {
   const welcome = document.getElementById('welcome');

@@ -1,7 +1,10 @@
-// ─── Groq config (same as ai.js) ─────────────────────────────────────────────
-const GROQ_API_KEY = 'YOUR_API_KEY';
-const GROQ_URL = 'URL';
-const GROQ_MODEL = 'LLM_MODEL_NAME';
+// ─── Read AI config from localStorage (shared with ai.js) ────────────────────
+function getAIConfig() {
+  try {
+    const raw = localStorage.getItem('algoviz-ai-config');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
 
 // ─── Fallback local question bank ─────────────────────────────────────────────
 const FALLBACK_QUESTIONS = [
@@ -45,8 +48,13 @@ function shuffle(arr) {
   return a;
 }
 
-// ─── Groq: generate fresh quiz questions ─────────────────────────────────────
-async function fetchQuestionsFromGroq() {
+// ─── LLM: generate fresh quiz questions ──────────────────────────────────────
+async function fetchQuestionsFromLLM() {
+  if (!navigator.onLine) return null;
+
+  const cfg = getAIConfig();
+  if (!cfg || !cfg.key || !cfg.url || !cfg.model) return null;
+
   const prompt = `Generate exactly ${TOTAL} multiple-choice quiz questions about Data Structures and Algorithms (sorting algorithms, searching algorithms, graph algorithms, dynamic programming, time/space complexity). 
 
 STRICT rules:
@@ -65,27 +73,39 @@ STRICT rules:
 - Vary difficulty: mix easy, medium, and hard questions.
 - Topics to pull from (vary each call): Big-O notation, sorting stability, in-place algorithms, recursion, greedy algorithms, divide and conquer, graph traversal, shortest path, minimum spanning tree, dynamic programming, hashing, tree structures, space complexity, amortized analysis.`;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s for longer generation
+
   try {
-    const res = await fetch(GROQ_URL, {
+    const res = await fetch(cfg.url.trim(), {
       method: 'POST',
+      mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
+        'Authorization': `Bearer ${cfg.key.trim()}`
       },
       body: JSON.stringify({
-        model: GROQ_MODEL,
+        model: cfg.model.trim(),
         messages: [
           { role: 'system', content: 'You are a computer science quiz generator. Always respond with raw JSON only — no markdown, no code fences, no extra text.' },
           { role: 'user',   content: prompt }
         ],
         max_tokens: 2000,
-        temperature: 0.9   // higher temp = more variety
-      })
+        temperature: 0.9,
+        stream: false
+      }),
+      signal: controller.signal
     });
 
-    if (!res.ok) return null;
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      console.warn('[Quiz] LLM API error:', res.status);
+      return null;
+    }
     const data = await res.json();
-    const raw  = data.choices?.[0]?.message?.content?.trim();
+    const raw  = data?.choices?.[0]?.message?.content?.trim()
+              || data?.choices?.[0]?.text?.trim();
     if (!raw) return null;
 
     // Strip accidental markdown fences if model disobeys
@@ -102,10 +122,13 @@ STRICT rules:
     );
     if (valid.length < TOTAL) return null;
     return valid.slice(0, TOTAL);
-  } catch {
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.warn('[Quiz] LLM fetch error:', err.message);
     return null;
   }
 }
+
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 function setLoadingState(loading) {
@@ -229,15 +252,56 @@ export function initQuiz() {
     startBtn.addEventListener('click', async () => {
       score = 0; streak = 0; qIdx = 0;
 
+      const cfg = getAIConfig();
+      const hasAPI = cfg && cfg.key && cfg.url && cfg.model && navigator.onLine;
+
       // Show loading while LLM generates questions
       setLoadingState(true);
 
-      let questions = await fetchQuestionsFromGroq();
+      // If no API config, show a "no config" notice in the spinner
+      if (!hasAPI) {
+        const questionEl = document.getElementById('quiz-question');
+        if (questionEl) {
+          questionEl.innerHTML = `
+            <div style="text-align:center;padding:1.5rem">
+              <div class="quiz-spinner"></div>
+              <div style="margin-top:1rem;color:var(--text-dim);font-size:.9rem">
+                📚 Loading local questions…
+              </div>
+              <div style="margin-top:.5rem;color:var(--accent2);font-size:.75rem">
+                ${!navigator.onLine ? '📡 You are offline.' : '⚠ No AI API configured.'}
+                <br>Configure the AI (🤖 AI Advisor) to get unique AI-generated questions.
+              </div>
+            </div>`;
+        }
+      }
 
-      // Graceful fallback if API fails
+      let questions = hasAPI ? await fetchQuestionsFromLLM() : null;
+      let source = 'ai';
+
+      // Graceful fallback if API fails or not configured
       if (!questions) {
-        console.warn('[Quiz] Groq API failed — falling back to local questions.');
+        source = 'local';
+        if (hasAPI) {
+          // API was attempted but failed — log it
+          console.warn('[Quiz] LLM API failed — falling back to local questions.');
+        }
         questions = shuffle(FALLBACK_QUESTIONS).slice(0, TOTAL);
+      }
+
+      // Update badge
+      const badge = document.getElementById('quiz-source-badge');
+      if (badge) {
+        badge.style.display = 'inline-block';
+        if (source === 'ai') {
+          badge.textContent = '✨ AI Generated';
+          badge.style.background = 'var(--accent)';
+          badge.style.color = '#000';
+        } else {
+          badge.textContent = '📚 Local Questions';
+          badge.style.background = 'var(--bg-tertiary)';
+          badge.style.color = 'var(--text-dim)';
+        }
       }
 
       shuffledQ = questions.map(q => ({ ...q, _result: null }));
@@ -245,6 +309,7 @@ export function initQuiz() {
 
       startBtn.textContent = '↺ New AI Quiz';
       showQuestion();
+
     });
   }
 
@@ -255,3 +320,4 @@ export function initQuiz() {
     });
   }
 }
+

@@ -5,13 +5,17 @@ import {
 
 export async function bubbleSort(arr) {
   const n = arr.length; renderBars(arr);
+  log(`Starting Bubble Sort (n=${n})`);
   for (let i = 0; i < n - 1 && !state.stopFlag; i++) {
     for (let j = 0; j < n - i - 1 && !state.stopFlag; j++) {
       incCmp(); incStep();
+      log(`Comparing index ${j} (${arr[j]}) and index ${j+1} (${arr[j+1]})`);
       animateBar(j, 'comparing'); animateBar(j + 1, 'comparing');
       await sleep(getDelay());
       if (arr[j] > arr[j + 1]) {
-        incSwp(); [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        incSwp(); 
+        log(`Swapping ${arr[j]} and ${arr[j+1]}`);
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
         animateBar(j, 'swapping'); animateBar(j + 1, 'swapping');
         await animateSwap(j, j + 1, arr);
         await sleep(getDelay() * 0.5);
@@ -27,19 +31,25 @@ export async function bubbleSort(arr) {
 
 export async function selectionSort(arr) {
   const n = arr.length; renderBars(arr);
+  log(`Starting Selection Sort (n=${n})`);
   for (let i = 0; i < n - 1 && !state.stopFlag; i++) {
     let minIdx = i; animateBar(i, 'pivot');
+    log(`Pass ${i+1}: finding minimum...`);
     for (let j = i + 1; j < n && !state.stopFlag; j++) {
       incCmp(); incStep(); animateBar(j, 'comparing');
+      log(`Comparing current min (${arr[minIdx]}) with arr[${j}] (${arr[j]})`);
       await sleep(getDelay() * 0.6);
       if (arr[j] < arr[minIdx]) {
         if (minIdx !== i) clearBar(minIdx);
         minIdx = j; animateBar(minIdx, 'pivot');
+        log(`New minimum found: ${arr[j]} at index ${j}`);
       } else clearBar(j);
       await sleep(getDelay() * 0.4);
     }
     if (minIdx !== i) {
-      incSwp(); [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+      incSwp(); 
+      log(`Swapping arr[${i}] (${arr[i]}) with new min (${arr[minIdx]})`);
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
       animateBar(i, 'swapping'); animateBar(minIdx, 'swapping');
       await animateSwap(i, minIdx, arr);
       await sleep(getDelay());
@@ -53,11 +63,14 @@ export async function selectionSort(arr) {
 
 export async function insertionSort(arr) {
   const n = arr.length; renderBars(arr); animateBar(0, 'sorted');
+  log(`Starting Insertion Sort (n=${n})`);
   for (let i = 1; i < n && !state.stopFlag; i++) {
     const key = arr[i]; let j = i - 1; animateBar(i, 'pivot');
+    log(`Selected key ${key} at index ${i}`);
     await sleep(getDelay());
     while (j >= 0 && arr[j] > key && !state.stopFlag) {
       incCmp(); incStep(); animateBar(j, 'comparing');
+      log(`Shifting ${arr[j]} right because ${arr[j]} > ${key}`);
       arr[j + 1] = arr[j]; incSwp();
       await animateSwap(j, j + 1, arr);
       await sleep(getDelay() * 0.7);
@@ -65,6 +78,7 @@ export async function insertionSort(arr) {
       j--;
     }
     arr[j + 1] = key; clearBar(j + 1); animateBar(j + 1, 'sorted');
+    log(`Inserted key ${key} at index ${j+1}`);
     rebuildBar(j + 1, arr);
     await sleep(getDelay() * 0.5);
     for (let k = 0; k <= i; k++) animateBar(k, 'sorted');
@@ -75,6 +89,7 @@ export async function insertionSort(arr) {
 
 export async function mergeSort(arr) {
   renderBars(arr);
+  log(`Starting Merge Sort (n=${arr.length})`);
   await mergeSortH(arr, 0, arr.length - 1);
   if (!state.stopFlag) {
     for (let i = 0; i < arr.length; i++) animateBar(i, 'sorted');
@@ -85,6 +100,7 @@ export async function mergeSort(arr) {
 async function mergeSortH(arr, l, r) {
   if (l >= r || state.stopFlag) return;
   const mid = Math.floor((l + r) / 2);
+  log(`Dividing: left=[${l}..${mid}], right=[${mid+1}..${r}]`);
   for (let i = l; i <= r; i++) animateBar(i, 'comparing');
   await sleep(getDelay() * 0.6);
   for (let i = l; i <= r; i++) clearBar(i);
@@ -94,10 +110,12 @@ async function mergeSortH(arr, l, r) {
 }
 async function doMerge(arr, l, mid, r) {
   if (state.stopFlag) return;
+  log(`Merging segments [${l}..${mid}] and [${mid+1}..${r}]`);
   const left = arr.slice(l, mid + 1), right = arr.slice(mid + 1, r + 1);
   let i = 0, j = 0, k = l;
   while (i < left.length && j < right.length && !state.stopFlag) {
     incCmp(); incStep(); animateBar(k, 'swapping');
+    log(`Comparing L[${i}] (${left[i]}) with R[${j}] (${right[j]})`);
     await sleep(getDelay() * 0.7);
     if (left[i] <= right[j]) arr[k] = left[i++];
     else arr[k] = right[j++];
@@ -117,6 +135,7 @@ async function doMerge(arr, l, mid, r) {
 
 export async function quickSort(arr) {
   renderBars(arr);
+  log(`Starting Quick Sort (n=${arr.length})`);
   await quickSortH(arr, 0, arr.length - 1);
   if (!state.stopFlag) {
     for (let i = 0; i < arr.length; i++) animateBar(i, 'sorted');
@@ -127,17 +146,21 @@ export async function quickSort(arr) {
 async function quickSortH(arr, low, high) {
   if (low >= high || state.stopFlag) return;
   const pi = await partition(arr, low, high);
+  log(`Recursively sorting left of ${pi} and right of ${pi}`);
   await quickSortH(arr, low, pi - 1);
   await quickSortH(arr, pi + 1, high);
 }
 async function partition(arr, low, high) {
   const pivot = arr[high]; animateBar(high, 'pivot');
+  log(`Pivot set to last element: ${pivot} (at index ${high})`);
   let i = low - 1;
   for (let j = low; j < high && !state.stopFlag; j++) {
     incCmp(); incStep(); animateBar(j, 'comparing');
+    log(`Comparing arr[${j}] (${arr[j]}) with pivot (${pivot})`);
     await sleep(getDelay() * 0.8);
     if (arr[j] <= pivot) {
       i++; [arr[i], arr[j]] = [arr[j], arr[i]]; incSwp();
+      log(`Since ${arr[j]} <= pivot, swapped with boundary element at index ${i}`);
       if (i !== j) {
         animateBar(i, 'swapping'); animateBar(j, 'swapping');
         await animateSwap(i, j, arr);
@@ -147,6 +170,7 @@ async function partition(arr, low, high) {
     clearBar(j);
   }
   [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]]; incSwp();
+  log(`Moved pivot ${pivot} to its final position at index ${i+1}`);
   animateBar(high, 'swapping'); animateBar(i + 1, 'swapping');
   await animateSwap(i + 1, high, arr);
   await sleep(getDelay() * 0.4);
@@ -186,18 +210,22 @@ async function heapify(arr, n, i) {
 
 export async function shellSort(arr) {
   const n = arr.length; renderBars(arr);
+  log(`Starting Shell Sort (n=${n})`);
   let gap = Math.floor(n / 2);
   while (gap > 0 && !state.stopFlag) {
+    log(`Current gap: ${gap}`);
     for (let i = gap; i < n && !state.stopFlag; i++) {
       const temp = arr[i]; let j = i; animateBar(i, 'pivot');
       await sleep(getDelay() * 0.4);
       while (j >= gap && arr[j - gap] > temp && !state.stopFlag) {
         incCmp(); incStep(); animateBar(j - gap, 'comparing');
+        log(`Shifting ${arr[j-gap]} (gap=${gap}) because it's > ${temp}`);
         arr[j] = arr[j - gap]; incSwp(); rebuildBar(j, arr);
         await sleep(getDelay() * 0.55);
         clearBar(j - gap); j -= gap;
       }
       arr[j] = temp; rebuildBar(j, arr); clearBar(j);
+      log(`Inserted ${temp} at index ${j}`);
     }
     gap = Math.floor(gap / 2);
   }
